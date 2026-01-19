@@ -1,22 +1,24 @@
 import express from "express";
-import axios from "axios";
 import cors from "cors";
 import dotenv from "dotenv";
+import axios from "axios";
 
 dotenv.config();
-
 const app = express();
 
 /* ---------------- CORS ---------------- */
+// Allow localhost dev + frontend URL
 app.use(
   cors({
-    origin: "*", // OK for now
+    origin: ["http://localhost:5173"], // add your deployed frontend URL later
     methods: ["GET", "POST", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
-app.options("*", cors()); // ✅ preflight fix
+// Handle preflight OPTIONS requests
+app.options("*", cors());
+
 app.use(express.json());
 
 /* ---------------- HEALTH CHECK ---------------- */
@@ -27,14 +29,7 @@ app.get("/", (req, res) => {
 /* ---------------- AI CODE EXPLANATION ---------------- */
 app.post("/analyze", async (req, res) => {
   const { code } = req.body;
-
-  if (!code) {
-    return res.status(400).json({ error: "No code provided" });
-  }
-
-  if (!process.env.GROQ_API_KEY) {
-    return res.status(500).json({ error: "GROQ API key missing" });
-  }
+  if (!code) return res.status(400).json({ error: "No code provided" });
 
   try {
     const response = await axios.post(
@@ -55,12 +50,10 @@ app.post("/analyze", async (req, res) => {
     );
 
     const result =
-      response.data?.choices?.[0]?.message?.content ||
-      "No explanation returned";
-
+      response.data?.choices?.[0]?.message?.content || "No explanation returned";
     res.json({ result });
   } catch (err) {
-    console.error("Groq API error:", err.response?.data || err.message);
+    console.error(err.response?.data || err.message);
     res.status(500).json({ error: "AI analysis failed" });
   }
 });
