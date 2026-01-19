@@ -1,36 +1,44 @@
 import express from "express";
+import axios from "axios";
 import cors from "cors";
+import dotenv from "dotenv";
 
+dotenv.config();
 const app = express();
-
-// ✅ Apply CORS to all requests, including preflight
-app.use(
-  cors({
-    origin: ["http://localhost:5173", "https://your-frontend-domain.com"], // add deployed frontend too
-    methods: ["GET", "POST", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
-
+app.use(cors());
 app.use(express.json());
 
-// ✅ Optional: handle all OPTIONS requests manually (works on some platforms)
-app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "*"); // or restrict to your frontend
-  res.header("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
-  res.header("Access-Control-Allow-Headers", "Content-Type,Authorization");
-  if (req.method === "OPTIONS") return res.sendStatus(200);
-  next();
-});
-
-/* ---------------- ANALYZE ENDPOINT ---------------- */
-app.post("/analyze", (req, res) => {
+// --- AI code explanation endpoint ---
+app.post("/analyze", async (req, res) => {
   const { code } = req.body;
   if (!code) return res.status(400).json({ error: "No code provided" });
-  const explanation = `Received ${code.split("\n").length} lines of code.`;
-  res.json({ result: explanation });
+
+  try {
+    const response = await axios.post(
+      "https://api.groq.com/openai/v1/chat/completions",
+      {
+        model: "llama-3.3-70b-versatile",
+        messages: [
+          { role: "system", content: "You are a senior software engineer." },
+          { role: "user", content: `Explain this code:\n${code}` },
+        ],
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    const result = response.data.choices?.[0]?.message?.content || "No explanation returned";
+    res.json({ result });
+  } catch (err) {
+    console.error(err.response?.data || err.message);
+    res.status(500).json({ error: "AI analysis failed" });
+  }
 });
 
-/* ---------------- START SERVER ---------------- */
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Backend running on port ${PORT}`));
+
+
+app.listen(5000, () => console.log("Backend running on http://localhost:5000"));
