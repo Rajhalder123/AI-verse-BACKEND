@@ -16,6 +16,9 @@ app.use(
 
 app.use(express.json());
 
+/* ---------------- HANDLE PREFLIGHT ---------------- */
+app.options("*", cors()); // allow all preflight requests
+
 /* ---------------- HEALTH CHECK ---------------- */
 app.get("/", (req, res) => {
   res.json({ status: "AI-Verse backend running 🚀" });
@@ -29,19 +32,10 @@ app.post("/analyze", (req, res) => {
     return res.status(400).json({ error: "No code provided" });
   }
 
-  // Simple dummy explanation (replace with your own logic if needed)
+  // Dummy explanation
   const explanation = `Received ${code.split("\n").length} lines of code.`;
 
   res.json({ result: explanation });
-});
-
-/* ---------------- HANDLE PREFLIGHT ---------------- */
-app.use((req, res, next) => {
-  if (req.method === "OPTIONS") {
-    res.sendStatus(200);
-  } else {
-    next();
-  }
 });
 
 /* ---------------- START SERVER ---------------- */
