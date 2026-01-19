@@ -7,14 +7,16 @@ dotenv.config();
 
 const app = express();
 
-/* ---------------- MIDDLEWARE ---------------- */
+/* ---------------- CORS ---------------- */
 app.use(
   cors({
-    origin: "*", // later restrict to frontend URL
-    methods: ["GET", "POST"],
+    origin: "*", // OK for now
+    methods: ["GET", "POST", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
+app.options("*", cors()); // ✅ preflight fix
 app.use(express.json());
 
 /* ---------------- HEALTH CHECK ---------------- */
